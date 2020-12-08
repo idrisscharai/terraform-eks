@@ -77,7 +77,7 @@ module "eks" {
   source          = "terraform-aws-modules/eks/aws"
   cluster_name    = var.cluster_name
   cluster_version = "1.17"
-  subnets         = module.vpc.private_subnets
+  subnets         = module.vpc.public_subnets
   vpc_id          = module.vpc.vpc_id
 
   worker_groups = [
@@ -96,16 +96,6 @@ module "eks" {
       asg_desired_capacity          = 1
     },
   ]
-
-  workers_additional_policies = [aws_iam_policy.worker_policy.arn]
-
-}
-
-resource "aws_iam_policy" "worker_policy" {
-  name        = "worker-policy"
-  description = "Worker policy for the ALB Ingress"
-
-  policy = file("iam-policy.json")
 }
 
 ###############################################################################
@@ -197,10 +187,10 @@ resource "helm_release" "ingress" {
     name  = "autoDiscoverAwsVpcID"
     value = "true"
   }
-  # set {
-  #   name  = "clusterName"
-  #   value = local.cluster_name
-  # }
+  set {
+    name  = "clusterName"
+    value = var.cluster_name
+  }
 }
 
 ###############################################################################
