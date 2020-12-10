@@ -26,10 +26,10 @@ data "aws_ami" "ubuntu_latest" {
 data "aws_ec2_instance_type_offering" "ubuntu_micro" {
   filter {
     name   = "instance-type"
-    values = ["t2.small"]
+    values = ["t2.medium"]
   }
 
-  preferred_instance_types = ["t3.small"]
+  preferred_instance_types = ["t3.medium"]
 }
 
 # Availability zones data source to get list of AWS Availability zones
@@ -67,12 +67,15 @@ module "vpc" {
   private_subnet_tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "kubernetes.io/role/internal-elb"           = "1"
+    "k8s.io/cluster-autoscaler/enabled"         = true
+    "k8s.io/cluster-autoscaler/jupyterhub"      = "owned"
+
   }
 
 }
 
 ###############################################################################
-############################### KUBERNETES ####################################
+############################### HERE BE DRAGONS ###############################
 ###############################################################################
 
 data "aws_eks_cluster" "cluster" {
@@ -83,6 +86,25 @@ data "aws_eks_cluster_auth" "cluster" {
   name = module.eks.cluster_id
 }
 
+data "tls_certificate" "cert" {
+  url = data.aws_eks_cluster.cluster.identity[0].oidc[0].issuer
+}
+
+resource "aws_iam_openid_connect_provider" "openid_connect" {
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.cert.certificates.0.sha1_fingerprint]
+  url             = data.aws_eks_cluster.cluster.identity[0].oidc[0].issuer
+}
+
+module "ebs_csi_driver_controller" {
+  source = "DrFaust92/ebs-csi-driver/kubernetes"
+  # version = "<VERSION>"
+
+  ebs_csi_controller_role_name               = "ebs-csi-driver-controller"
+  ebs_csi_controller_role_policy_name_prefix = "ebs-csi-driver-policy"
+  oidc_url                                   = aws_iam_openid_connect_provider.openid_connect.url
+}
+
 ###############################################################################
 ############################### EKS CLUSTER ###################################
 ###############################################################################
@@ -91,128 +113,45 @@ module "eks" {
   source          = "terraform-aws-modules/eks/aws"
   cluster_name    = var.cluster_name
   cluster_version = "1.17"
-  subnets         = module.vpc.public_subnets
+  subnets         = module.vpc.private_subnets
   vpc_id          = module.vpc.vpc_id
 
   worker_groups = [
     {
-      name                          = "worker-group-1"
-      instance_type                 = data.aws_ec2_instance_type_offering.ubuntu_micro.id
-      subnets                       = [module.vpc.public_subnets[0]]
-      additional_security_group_ids = [aws_security_group.worker_group_mgmt_one.id]
-      asg_desired_capacity          = 1
+      name          = "worker-group-1"
+      instance_type = data.aws_ec2_instance_type_offering.ubuntu_micro.id
+      subnets       = [module.vpc.private_subnets[0]]
+      # additional_security_group_ids = [aws_security_group.worker_group_mgmt_one.id]
+      asg_desired_capacity = 1
     },
     {
-      name                          = "worker-group-2"
-      instance_type                 = data.aws_ec2_instance_type_offering.ubuntu_micro.id
-      subnets                       = [module.vpc.public_subnets[1]]
-      additional_security_group_ids = [aws_security_group.worker_group_mgmt_two.id]
-      asg_desired_capacity          = 1
+      name          = "worker-group-2"
+      instance_type = data.aws_ec2_instance_type_offering.ubuntu_micro.id
+      subnets       = [module.vpc.private_subnets[1]]
+      # additional_security_group_ids = [aws_security_group.worker_group_mgmt_two.id]
+      asg_desired_capacity = 1
     },
+    {
+      name          = "worker-group-3"
+      instance_type = data.aws_ec2_instance_type_offering.ubuntu_micro.id
+      subnets       = [module.vpc.private_subnets[2]]
+      # additional_security_group_ids = [aws_security_group.worker_group_mgmt_two.id]
+      asg_desired_capacity = 1
+    }
   ]
 }
-
-###############################################################################
-############################## SECURITY GROUPS ################################
-###############################################################################
-
-resource "aws_security_group" "worker_group_mgmt_one" {
-  name_prefix = "worker_group_mgmt_one"
-  vpc_id      = module.vpc.vpc_id
-
-  ingress {
-    from_port = 22
-    to_port   = 22
-    protocol  = "tcp"
-
-    cidr_blocks = [
-      "10.0.0.0/8",
-    ]
-  }
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.cluster.endpoint
+  token                  = data.aws_eks_cluster_auth.cluster.token
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
+  load_config_file       = false
 }
-
-resource "aws_security_group" "worker_group_mgmt_two" {
-  name_prefix = "worker_group_mgmt_two"
-  vpc_id      = module.vpc.vpc_id
-
-  ingress {
-    from_port = 22
-    to_port   = 22
-    protocol  = "tcp"
-
-    cidr_blocks = [
-      "192.168.0.0/16",
-    ]
-  }
-}
-
-resource "aws_security_group" "all_worker_mgmt" {
-  name_prefix = "all_worker_management"
-  vpc_id      = module.vpc.vpc_id
-
-  ingress {
-    from_port = 22
-    to_port   = 22
-    protocol  = "tcp"
-
-    cidr_blocks = [
-      "10.0.0.0/8",
-      "172.16.0.0/12",
-      "192.168.0.0/16",
-    ]
-  }
-}
-
-
-###############################################################################
-#################################### HELM #####################################
-###############################################################################
-
-
-provider "helm" {
-  # version = "~>1.0.0"
-  debug = true
-  alias = "helm"
-
-  kubernetes {
-    host                   = aws_eks_cluster.cluster.endpoint
-    token                  = data.aws_eks_cluster_auth.cluster.token
-    cluster_ca_certificate = base64decode(aws_eks_cluster.cluster.certificate_authority.0.data)
-    load_config_file       = false
-  }
-}
-
-# data "helm_repository" "stable" {
-#   name = "stable"
-#   url  = "https://kubernetes-charts.storage.googleapis.com"
-# }
-#
-# resource "helm_release" "ingress" {
-#   name       = "ingress"
-#   chart      = "aws-alb-ingress-controller"
-#   repository = "http://storage.googleapis.com/kubernetes-charts-incubator"
-#   version    = "1.0.2"
-#
-#   set {
-#     name  = "autoDiscoverAwsRegion"
-#     value = "true"
-#   }
-#   set {
-#     name  = "autoDiscoverAwsVpcID"
-#     value = "true"
-#   }
-#   set {
-#     name  = "clusterName"
-#     value = var.cluster_name
-#   }
-# }
 
 ###############################################################################
 #################################### TODO #####################################
 ###############################################################################
 
 # Add s3 bucket and vault
-# Load balancer????
 
 ###############################################################################
 ################################# OUTPUTS #####################################

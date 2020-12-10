@@ -1,0 +1,18 @@
+proxy:
+  secretToken: "YOUR TOKEN HERE"
+  https:
+    enabled: false
+
+auth:
+  type: dummy
+  dummy:
+    password: 'supersecretpassword!'
+  whitelist:
+    users:
+      - admin
+
+singleuser:
+  storage:
+    capacity: 4Gi
+    dynamic:
+      storageClass: gp2
