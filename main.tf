@@ -98,7 +98,6 @@ resource "aws_iam_openid_connect_provider" "openid_connect" {
 
 module "ebs_csi_driver_controller" {
   source = "DrFaust92/ebs-csi-driver/kubernetes"
-  # version = "<VERSION>"
 
   ebs_csi_controller_role_name               = "ebs-csi-driver-controller"
   ebs_csi_controller_role_policy_name_prefix = "ebs-csi-driver-policy"
@@ -118,24 +117,21 @@ module "eks" {
 
   worker_groups = [
     {
-      name          = "worker-group-1"
-      instance_type = data.aws_ec2_instance_type_offering.ubuntu_micro.id
-      subnets       = [module.vpc.private_subnets[0]]
-      # additional_security_group_ids = [aws_security_group.worker_group_mgmt_one.id]
+      name                 = "worker-group-1"
+      instance_type        = data.aws_ec2_instance_type_offering.ubuntu_micro.id
+      subnets              = [module.vpc.private_subnets[0]]
       asg_desired_capacity = 1
     },
     {
-      name          = "worker-group-2"
-      instance_type = data.aws_ec2_instance_type_offering.ubuntu_micro.id
-      subnets       = [module.vpc.private_subnets[1]]
-      # additional_security_group_ids = [aws_security_group.worker_group_mgmt_two.id]
+      name                 = "worker-group-2"
+      instance_type        = data.aws_ec2_instance_type_offering.ubuntu_micro.id
+      subnets              = [module.vpc.private_subnets[1]]
       asg_desired_capacity = 1
     },
     {
-      name          = "worker-group-3"
-      instance_type = data.aws_ec2_instance_type_offering.ubuntu_micro.id
-      subnets       = [module.vpc.private_subnets[2]]
-      # additional_security_group_ids = [aws_security_group.worker_group_mgmt_two.id]
+      name                 = "worker-group-3"
+      instance_type        = data.aws_ec2_instance_type_offering.ubuntu_micro.id
+      subnets              = [module.vpc.private_subnets[2]]
       asg_desired_capacity = 1
     }
   ]

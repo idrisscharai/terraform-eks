@@ -12,3 +12,5 @@
 12) Wait a bit and then get j-hub address: **kubectl —namespace=default get svc proxy-public**
 13) Password and login is kept in values.yml file. By default: **admin** and **supersecretpassword!**
 14) To clean up run **terraform destroy**
+
+![alt text](https://github.com/JanisRancans/terraform-eks/blob/main/jhub-running-python.png?raw=true)
