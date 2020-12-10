@@ -149,6 +149,18 @@ provider "kubernetes" {
 
 # Add s3 bucket and vault
 
+module "s3_bucket_for_logs" {
+  source = "terraform-aws-modules/s3-bucket/aws"
+
+  bucket = "test-bucket"
+  acl    = "log-delivery-write"
+
+  # Allow deletion of non-empty bucket
+  force_destroy = true
+
+  attach_elb_log_delivery_policy = true
+}      
+      
 ###############################################################################
 ################################# OUTPUTS #####################################
 ###############################################################################
