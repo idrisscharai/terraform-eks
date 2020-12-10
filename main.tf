@@ -6,6 +6,10 @@ variable "cluster_name" {
   default = "test-cluster"
 }
 
+provider "aws" {
+  region = "eu-central-1"
+}
+
 # Search for latest Ubuntu server image
 data "aws_ami" "ubuntu_latest" {
   most_recent = true
