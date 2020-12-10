@@ -158,7 +158,12 @@ module "s3_bucket_for_logs" {
 
   bucket = "test-bucket-cloud-auto-acc-interns"
   acl    = "log-delivery-write"
-
+  
+  logging = {
+    target_bucket = s3_bucket_for_logs.bucket
+    target_prefix = "log/"
+  }
+  
   # Allow deletion of non-empty bucket
   force_destroy = true
 
