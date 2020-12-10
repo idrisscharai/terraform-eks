@@ -1,7 +1,7 @@
 # HOW TO USE
 
 1) Clone repo and go inside main folder
-2) Run **terraform int**. If it fails because you are using Terraform 14 go to **.terraform/modules/**, find respective module and uncomment version constraints in **versions.tf**
+2) Run **terraform int**. If it fails because you are using Terraform 14 go to **./terraform/modules/**, find respective module and uncomment version constraints in **versions.tf**
 4) Run **terraform apply**. Resource creation should take approx 10 - 15 minutes.
 5) Install and configure **aws**, **kubectl** & **helm**.
 6) Point kubeconfig to cluster: **aws eks —region your-region —name test-cluster**.
