@@ -160,7 +160,7 @@ module "s3_bucket_for_logs" {
   acl    = "log-delivery-write"
   
   logging = {
-    target_bucket = s3_bucket_for_logs.bucket
+    target_bucket = module.s3_bucket_for_logs.bucket
     target_prefix = "log/"
   }
   
