@@ -156,7 +156,7 @@ provider "kubernetes" {
 module "s3_bucket_for_logs" {
   source = "terraform-aws-modules/s3-bucket/aws"
 
-  bucket = "test-bucket-C&A-Acc"
+  bucket = "test-bucket-cloud-auto-acc-interns"
   acl    = "log-delivery-write"
 
   # Allow deletion of non-empty bucket
