@@ -1,18 +1,18 @@
 proxy:
-  secretToken: "YOUR TOKEN HERE"
+  secretToken: "dcefdcfa94ac9854f9f175df60113e7fe8d43a7833a1eef9556fa2bbf461c86b"
   https:
     enabled: false
 
 auth:
   type: dummy
   dummy:
-    password: 'supersecretpassword!'
+    password: 'pass'  ****CHANGED****
   whitelist:
     users:
       - admin
 
 singleuser:
   storage:
-    capacity: 4Gi
+    capacity: 1Gi     ****CHANGED FROM 4****
     dynamic:
       storageClass: gp2
