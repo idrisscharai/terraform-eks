@@ -146,7 +146,7 @@ resource "helm_release" "jhub" {
   chart      = "jupyterhub"
 
   values = [
-    file("values.yaml")
+    file("values.yml")
   ]
 }    
     
