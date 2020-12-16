@@ -158,15 +158,6 @@ resource "aws_s3_bucket" "log_bucket" {
   bucket = "test-bucket-cloud-auto-acc-interns"
   acl    = "log-delivery-write"
   policy = file("s3policy.json")
-
-  tags = {
-    Name        = "Acc C&A Bucket"
-  }
-  
-  #logging = {
-  #  target_bucket = "test-bucket-cloud-auto-acc-interns"
-  #  target_prefix = "logs/"
-  #}
   
  # Allow deletion of non-empty bucket
   force_destroy = true
@@ -175,7 +166,7 @@ resource "aws_s3_bucket" "log_bucket" {
 }
 
 ###############################################################################
-#################### LAMBA FUNCTION FOR LOG DUPLICATION #######################
+#################### LAMBDA FUNCTION FOR LOG DUPLICATION ######################
 ########################### FROM CLOUDWATCH TO S3 #############################   
 ###############################################################################    
 
