@@ -215,10 +215,10 @@ resource "aws_lambda_function" "test_lambda" {
   
   filename      = "lambda_function.py"
   function_name = "CloudWatch logs to S3 duplication"
-  role          = aws_iam_role.iam_for_lambda.arn
+  role          = aws_iam_role.iam_for_lambda.name
   handler       = "lambda_handler"
   
-  source_code_hash = filebase64sha256("lambda_function.py")
+  #source_code_hash = filebase64sha256("lambda_function.py")
   
   runtime = "python3.6"
   
