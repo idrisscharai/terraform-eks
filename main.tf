@@ -203,19 +203,19 @@ EOF
 
 # AMAZON PROVIDED POLICIES ATTACHMENT TO LAMBDA IAM ROLE
 
-resource "aws_iam_role_policy_attachment" "/AmazonS3FullAccess" {
+resource "aws_iam_role_policy_attachment" "AmazonS3FullAccess" {
   role       = aws_iam_role.iam_for_lambda.name
-  policy_arn = arn:aws:iam::aws:policy/AmazonS3FullAccess
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }   
     
 resource "aws_iam_role_policy_attachment" "CloudWatchLogsFullAccess" {
   role       = aws_iam_role.iam_for_lambda.name
-  policy_arn = arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
 }     
     
 resource "aws_iam_role_policy_attachment" "CloudWatchEventsFullAccess" {
   role       = aws_iam_role.iam_for_lambda.name
-  policy_arn = arn:aws:iam::aws:policy/CloudWatchEventsFullAccess
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchEventsFullAccess"
 }   
 
 # DEFINITION OF THE LAMBDA FUNCTION RESOURCE    
@@ -241,7 +241,8 @@ resource "aws_cloudwatch_event_rule" "cw_rule" {
   description = "Sends logs to an S3 bucket every 5 minutes"
 
   schedule_expression = rate(5 minutes)
-
+}
+    
 resource "aws_cloudwatch_event_target" "lambda" {
   rule      = aws_cloudwatch_event_rule.cw_rule.name
   target_id = "Lambda"
