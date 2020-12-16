@@ -10,7 +10,7 @@ This portion will obtain the Environment variables from AWS Lambda.
 GROUP_NAME = "/aws/eks/test-cluster/cluster"
 DESTINATION_BUCKET = "test-bucket-cloud-auto-acc-interns"
 PREFIX = "Lambda"
-NDAYS = 0
+NDAYS = "0"
 nDays = int(NDAYS)
 
 
