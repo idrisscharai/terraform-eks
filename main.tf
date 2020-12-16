@@ -239,8 +239,7 @@ resource "aws_lambda_function" "test_lambda" {
 resource "aws_cloudwatch_event_rule" "cw_rule" {
   name        = "send-logs-to-s3"
   description = "Sends logs to an S3 bucket every 5 minutes"
-
-  schedule_expression = rate(5 minutes)
+  schedule_expression = "rate(5 minutes)" # "cron(0 */5 * ? * *)" should also work
 }
     
 resource "aws_cloudwatch_event_target" "lambda" {
