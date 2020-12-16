@@ -7,10 +7,10 @@ import datetime
 This portion will obtain the Environment variables from AWS Lambda.
 """
 
-GROUP_NAME = os.environ['GROUP_NAME']
-DESTINATION_BUCKET = os.environ['DESTINATION_BUCKET']
-PREFIX = os.environ['PREFIX']
-NDAYS = os.environ['NDAYS']
+GROUP_NAME = audit
+DESTINATION_BUCKET = test-bucket-cloud-auto-acc-interns
+PREFIX = /aws/eks/
+NDAYS = 0
 nDays = int(NDAYS)
 
 
