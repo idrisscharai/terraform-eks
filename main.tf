@@ -98,7 +98,7 @@ module "eks" {
   cluster_version = "1.17"
   subnets         = module.vpc.private_subnets
   vpc_id          = module.vpc.vpc_id
-  # cluster_enabled_log_types = ["audit", "api", "authenticator", "controllerManager", "scheduler"]
+  cluster_enabled_log_types = ["audit"] #, "api", "authenticator", "controllerManager", "scheduler"]
     
   worker_groups = [
     {
@@ -165,7 +165,7 @@ resource "aws_s3_bucket" "log_bucket" {
   
   logging = {
     target_bucket = "test-bucket-cloud-auto-acc-interns"
-    target_prefix = "logs-from-cloudwatch/"
+    target_prefix = "logs/"
   }
   
  # Allow deletion of non-empty bucket
