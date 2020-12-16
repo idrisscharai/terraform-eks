@@ -163,10 +163,10 @@ resource "aws_s3_bucket" "log_bucket" {
     Name        = "Acc C&A Bucket"
   }
   
-  logging = {
-    target_bucket = "test-bucket-cloud-auto-acc-interns"
-    target_prefix = "logs/"
-  }
+  #logging = {
+  #  target_bucket = "test-bucket-cloud-auto-acc-interns"
+  #  target_prefix = "logs/"
+  #}
   
  # Allow deletion of non-empty bucket
   force_destroy = true
@@ -229,7 +229,7 @@ resource "aws_lambda_function" "test_lambda" {
   
   source_code_hash = filebase64sha256("lambda_function.py")
   
-  runtime = "Python3.6"
+  runtime = "python3.6"
   
   timeout = 90
 }
