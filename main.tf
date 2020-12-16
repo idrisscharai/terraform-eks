@@ -1,5 +1,5 @@
 ###############################################################################
-################################ DATA SOURCES #################################
+############################ VARS & DATA SOURCES ##############################
 ###############################################################################
 
 variable "cluster_name" {
@@ -49,8 +49,8 @@ module "vpc" {
 
   cidr            = "10.0.0.0/16"
   azs             = data.aws_availability_zones.available.names
-  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.6.0/24"]
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24"]
 
   enable_dns_hostnames = true
   enable_dns_support   = true
@@ -88,24 +88,6 @@ data "aws_eks_cluster_auth" "cluster" {
   name = module.eks.cluster_id
 }
 
-data "tls_certificate" "cert" {
-  url = data.aws_eks_cluster.cluster.identity[0].oidc[0].issuer
-}
-
-resource "aws_iam_openid_connect_provider" "openid_connect" {
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.cert.certificates.0.sha1_fingerprint]
-  url             = data.aws_eks_cluster.cluster.identity[0].oidc[0].issuer
-}
-
-module "ebs_csi_driver_controller" {
-  source = "DrFaust92/ebs-csi-driver/kubernetes"
-
-  ebs_csi_controller_role_name               = "ebs-csi-driver-controller"
-  ebs_csi_controller_role_policy_name_prefix = "ebs-csi-driver-policy"
-  oidc_url                                   = aws_iam_openid_connect_provider.openid_connect.url
-}
-
 ###############################################################################
 ############################### EKS CLUSTER ###################################
 ###############################################################################
@@ -116,7 +98,8 @@ module "eks" {
   cluster_version = "1.17"
   subnets         = module.vpc.private_subnets
   vpc_id          = module.vpc.vpc_id
-
+  # cluster_enabled_log_types = ["audit", "api", "authenticator", "controllerManager", "scheduler"]
+    
   worker_groups = [
     {
       name                 = "worker-group-1"
@@ -129,12 +112,6 @@ module "eks" {
       instance_type        = data.aws_ec2_instance_type_offering.ubuntu_micro.id
       subnets              = [module.vpc.private_subnets[1]]
       asg_desired_capacity = 1
-    },
-    {
-      name                 = "worker-group-3"
-      instance_type        = data.aws_ec2_instance_type_offering.ubuntu_micro.id
-      subnets              = [module.vpc.private_subnets[2]]
-      asg_desired_capacity = 1
     }
   ]
 }
@@ -144,27 +121,55 @@ provider "kubernetes" {
   cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
   load_config_file       = false
 }
+    
+###############################################################################
+############################### HELM & JHUB ###################################
+###############################################################################
+    
+# Helm provider installs in Kubernetes cluster
 
+provider "helm" {
+
+  kubernetes {
+    host                   = data.aws_eks_cluster.cluster.endpoint
+    token                  = data.aws_eks_cluster_auth.cluster.token
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
+    load_config_file       = false
+  }
+}
+
+# Pulls J-hub Helm chart and uses values.yaml file
+
+resource "helm_release" "jhub" {
+  name       = "jupyterhub"
+  repository = "https://jupyterhub.github.io/helm-chart/"
+  chart      = "jupyterhub"
+
+  values = [
+    file("values.yaml")
+  ]
+}    
+    
 ###############################################################################
 ############################### S3 BUCKET #####################################
 ###############################################################################
 
-module "s3_bucket_for_logs" {
-  source = "terraform-aws-modules/s3-bucket/aws"
+# module "s3_bucket_for_logs" {
+#  source = "terraform-aws-modules/s3-bucket/aws"
+#
+#  bucket = "test-bucket-cloud-auto-acc-interns"
+#  acl    = "log-delivery-write"
+#  
+#  logging = {
+#    target_bucket = "test-bucket-cloud-auto-acc-interns"
+#    target_prefix = "log/"
+#  }
+#  
+# # Allow deletion of non-empty bucket
+#  force_destroy = true
 
-  bucket = "test-bucket-cloud-auto-acc-interns"
-  acl    = "log-delivery-write"
-  
-  logging = {
-    target_bucket = "test-bucket-cloud-auto-acc-interns"
-    target_prefix = "log/"
-  }
-  
-  # Allow deletion of non-empty bucket
-  force_destroy = true
-
-  attach_elb_log_delivery_policy = true
-}      
+#  #attach_elb_log_delivery_policy = true
+#}
 
 ###############################################################################
 ################################## VAULT ######################################
@@ -191,3 +196,15 @@ output "config_map_aws_auth" {
   description = "A kubernetes configuration to authenticate to EKS cluster."
   value       = module.eks.config_map_aws_auth
 }
+
+# AWS and kubectl commands to show JupyterHub access IP
+resource "null_resource" "Jhub" {
+
+  provisioner "local-exec" {
+    command = "aws eks --region eu-central-1 update-kubeconfig --name test-cluster"
+  }
+
+  provisioner "local-exec" {
+    command = "kubectl --namespace=default get svc proxy-public"
+  }
+}  
