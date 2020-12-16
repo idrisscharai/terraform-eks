@@ -209,16 +209,26 @@ resource "aws_iam_role_policy_attachment" "CloudWatchEventsFullAccess" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchEventsFullAccess"
 }   
 
+# DATA SOURCE NEEDED FOR THE LAMBDA FUNCTION    
+    
+data "archive_file" "lambda_function" {
+  type        = "zip"
+  source_file = "lambda_function.py"
+  output_path = "lambda_function.zip"
+}    
+    
 # DEFINITION OF THE LAMBDA FUNCTION RESOURCE    
     
 resource "aws_lambda_function" "test_lambda" {
   
-  filename      = "lambda_function.py"
+  filename      = "lambda_function.zip"
   function_name = "CloudWatch logs to S3 duplication"
-  role          = aws_iam_role.iam_for_lambda.name
-  handler       = "lambda_handler"
+  role          = aws_iam_role.iam_for_lambda.arn
+  handler       = "lambda_function.lambda_handler"
   
-  #source_code_hash = filebase64sha256("lambda_function.py")
+  # This is to allow redeployment on AWS when the code changes because the hash changes as well.
+  # Without this, even if the code changes, the source file doesn't change so there is no redeployment happening with terraform apply.
+  source_code_hash = filebase64sha256("lambda_function.zip")
   
   runtime = "python3.6"
   
@@ -266,13 +276,13 @@ output "config_map_aws_auth" {
 }
 
 # AWS and kubectl commands to show JupyterHub access IP
-resource "null_resource" "Jhub" {
+#resource "null_resource" "Jhub" {
 
-  provisioner "local-exec" {
-    command = "aws eks --region eu-central-1 update-kubeconfig --name test-cluster"
-  }
+#  provisioner "local-exec" {
+#    command = "aws eks --region eu-central-1 update-kubeconfig --name test-cluster"
+#  }
 
-  provisioner "local-exec" {
-    command = "kubectl --namespace=default get svc proxy-public"
-  }
-}  
+#  provisioner "local-exec" {
+#    command = "kubectl --namespace=default get svc proxy-public"
+#  }
+#}  
