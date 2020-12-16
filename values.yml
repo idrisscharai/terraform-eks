@@ -6,13 +6,13 @@ proxy:
 auth:
   type: dummy
   dummy:
-    password: 'pass'  ****CHANGED****
+    password: 'pass'  ####CHANGED####
   whitelist:
     users:
       - admin
 
 singleuser:
   storage:
-    capacity: 1Gi     ****CHANGED FROM 4****
+    capacity: 1Gi     ####CHANGED FROM 4####
     dynamic:
       storageClass: gp2
