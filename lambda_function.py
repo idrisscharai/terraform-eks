@@ -7,7 +7,7 @@ import datetime
 This portion will obtain the Environment variables from AWS Lambda.
 """
 
-GROUP_NAME = audit
+GROUP_NAME = /aws/eks/test-cluster/cluster
 DESTINATION_BUCKET = test-bucket-cloud-auto-acc-interns
 PREFIX = /aws/eks/
 NDAYS = 0
