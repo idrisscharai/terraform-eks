@@ -30,7 +30,7 @@ data "aws_ami" "ubuntu_latest" {
 data "aws_ec2_instance_type_offering" "ubuntu_micro" {
   filter {
     name   = "instance-type"
-    values = ["t2.micro"]
+    values = ["t2.small"]
   }
 }
 
@@ -232,7 +232,7 @@ resource "aws_lambda_function" "test_lambda" {
   
   runtime = "python3.6"
   
-  timeout = 90
+  timeout = 120
 }
 
 # ADDS A CLOUDWATCH EVENT RULE THAT TRIGGERS THE LAMBDA FUNCTION AUTOMATICALLY
