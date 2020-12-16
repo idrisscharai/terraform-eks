@@ -1,5 +1,5 @@
 ###############################################################################
-############################ VARS & DATA SOURCES ##############################
+########################## SOME VARS & DATA SOURCES ###########################
 ###############################################################################
 
 variable "cluster_name" {
@@ -154,23 +154,100 @@ resource "helm_release" "jhub" {
 ############################### S3 BUCKET #####################################
 ###############################################################################
 
-# module "s3_bucket_for_logs" {
-#  source = "terraform-aws-modules/s3-bucket/aws"
-#
-#  bucket = "test-bucket-cloud-auto-acc-interns"
-#  acl    = "log-delivery-write"
-#  
-#  logging = {
-#    target_bucket = "test-bucket-cloud-auto-acc-interns"
-#    target_prefix = "log/"
-#  }
-#  
-# # Allow deletion of non-empty bucket
-#  force_destroy = true
+resource "aws_s3_bucket" "log_bucket" {
+  bucket = "test-bucket-cloud-auto-acc-interns"
+  acl    = "log-delivery-write"
+  policy = file("s3policy.json")
 
-#  #attach_elb_log_delivery_policy = true
-#}
+  tags = {
+    Name        = "Acc C&A Bucket"
+  }
+  
+  logging = {
+    target_bucket = "test-bucket-cloud-auto-acc-interns"
+    target_prefix = "logs-from-cloudwatch/"
+  }
+  
+ # Allow deletion of non-empty bucket
+  force_destroy = true
 
+ # attach_elb_log_delivery_policy = true
+}
+
+###############################################################################
+#################### LAMBA FUNCTION FOR LOG DUPLICATION #######################
+########################### FROM CLOUDWATCH TO S3 #############################   
+###############################################################################    
+
+# LAMBDA IAM ROLE    
+    
+resource "aws_iam_role" "iam_for_lambda" {
+  name = "iam_for_lambda"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+}
+
+# AMAZON PROVIDED POLICIES ATTACHMENT TO LAMBDA IAM ROLE
+
+resource "aws_iam_role_policy_attachment" "/AmazonS3FullAccess" {
+  role       = aws_iam_role.iam_for_lambda.name
+  policy_arn = arn:aws:iam::aws:policy/AmazonS3FullAccess
+}   
+    
+resource "aws_iam_role_policy_attachment" "CloudWatchLogsFullAccess" {
+  role       = aws_iam_role.iam_for_lambda.name
+  policy_arn = arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+}     
+    
+resource "aws_iam_role_policy_attachment" "CloudWatchEventsFullAccess" {
+  role       = aws_iam_role.iam_for_lambda.name
+  policy_arn = arn:aws:iam::aws:policy/CloudWatchEventsFullAccess
+}   
+
+# DEFINITION OF THE LAMBDA FUNCTION RESOURCE    
+    
+resource "aws_lambda_function" "test_lambda" {
+  
+  filename      = "lambda_function.py"
+  function_name = "CloudWatch logs to S3 duplication"
+  role          = aws_iam_role.iam_for_lambda.arn
+  handler       = "lambda_handler"
+  
+  source_code_hash = filebase64sha256("lambda_function.py")
+  
+  runtime = "Python3.6"
+  
+  timeout = 90
+}
+
+# ADDS A CLOUDWATCH EVENT RULE THAT TRIGGERS THE LAMBDA FUNCTION AUTOMATICALLY
+    
+resource "aws_cloudwatch_event_rule" "cw_rule" {
+  name        = "send-logs-to-s3"
+  description = "Sends logs to an S3 bucket every 5 minutes"
+
+  schedule_expression = rate(5 minutes)
+
+resource "aws_cloudwatch_event_target" "lambda" {
+  rule      = aws_cloudwatch_event_rule.cw_rule.name
+  target_id = "Lambda"
+  arn       = aws_lambda_function.test_lambda.arn
+}    
+    
 ###############################################################################
 ################################## VAULT ######################################
 ###############################################################################  
